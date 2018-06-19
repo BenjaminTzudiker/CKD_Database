@@ -1,0 +1,12 @@
+select specialty as Specialty, count(visit_provider_id) as Providers, count(visit_provider_id)/(select count(visit_provider_id) from provider where not specialty = 'Unspecified Primary Specialty')*100 as Percent from provider where not specialty = 'Unspecified Primary Specialty' group by specialty order by count(visit_provider_id) desc;
+
+create table provider_specialty as (select distinct specialty from provider);
+alter table provider_specialty add column specialty_id int auto_increment not null primary key;
+
+create table provider_normalized as (select provider.site_source, provider.visit_provider_id, provider_specialty.specialty_id from provider inner join provider_specialty on provider.specialty = provider_specialty.specialty);
+
+create view provider_view as select provider_normalized.site_source, provider_normalized.visit_provider_id, provider_specialty.specialty from provider_normalized inner join provider_specialty on provider_normalized.specialty_id = provider_specialty.specialty_id;
+
+create view provider_specialty_distribution as (select provider_specialty.specialty as Specialty, count(provider_normalized.visit_provider_id) as Providers, count(provider_normalized.visit_provider_id)/(select count(provider_normalized.visit_provider_id) from provider_normalized)*100 as Percent from provider_normalized inner join provider_specialty on provider_normalized.specialty_id = provider_specialty.specialty_id group by provider_specialty.specialty order by count(provider_normalized.visit_provider_id) desc);
+
+create view provider_specialty_distribution_nounspecified as (select provider_specialty.specialty as Specialty, count(provider_normalized.visit_provider_id) as Providers, count(provider_normalized.visit_provider_id)/(select count(provider_normalized.visit_provider_id) from provider_normalized where not provider_normalized.specialty_id = 1)*100 as Percent from provider_normalized inner join provider_specialty on provider_normalized.specialty_id = provider_specialty.specialty_id where not provider_normalized.specialty_id = 1 group by provider_specialty.specialty order by count(provider_normalized.visit_provider_id) desc);
