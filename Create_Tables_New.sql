@@ -8,7 +8,6 @@
 
 set @@SQL_MODE = REPLACE(@@SQL_MODE, 'NO_ZERO_IN_DATE', '');
 set @@SQL_MODE = REPLACE(@@SQL_MODE, 'NO_ZERO_DATE', '');
-set global local_infile = 1;
 
 -- Optimizations
 
@@ -16,9 +15,11 @@ set foreign_key_checks = 0;
 set autocommit = 0;
 set unique_checks = 0;
 set sql_log_bin = 0;
+
+-- CHANGE THE FOLLOWING LINES TO APPROPRIATE VALUES FOR YOUR COMPUTER
+
 set global innodb_buffer_pool_size = 2048 * 1024 * 1024;
 set global innodb_log_buffer_size = 256 * 1024 * 1024;
--- set bulk_insert_buffer_size = 2048 * 1024 * 1024;
 
 -- Site Source
 
