@@ -91,7 +91,7 @@ select provider_specialty.specialty as Specialty, count(visit_provider_id) as Pr
 
 Since columns like specialty_id might show up in multiple tables, it can be important to specify where they come from. In this case, comparing by IDs in the normalized table produces a more complicated SQL statement (although much of the complexity is removed if we know the ID of "Unspecified Primary Specialty" beforehand), but comparing integers is generally faster than comparing strings.
 
-#### CKD
+#### CKD/More Complicated Queries
 
 Using the power of our new database, we can start to find relevant information across multiple tables. Say we want information on Chronic Kidney Disease. Information on who is affected by CKD would likely be found in the diagnosis table - and indeed, there is a column that lists the ICD codes for every diagnosis. [Using the internet](https://icdcodelookup.com/icd-10/codes/Chronic%20Kidney%20Disease), we can start to narrow down which codes we're actually interested in. While the diagnosis table doesn't contain all the information we need directly, every row does contain an encounter ID. Using this ID, we can find the corresponding row in the encounter table, and from there find the patient ID to link us to the patient table.
 
@@ -103,7 +103,13 @@ select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18';
 
 We could add in/replace that with other codes depending on what we want to find out about. If we wanted a look at every encounter related to CKD, we could add in codes like E08.22 - E13.22, O10.2 - O10.3, and so on. There are plenty of ways to refine your queries to get exactly the information you need.
 
-Next, we can use a nested select statement to pull up all the patient IDs associated with the "N18" ICD code.
+This is neat, but a list of numbers isn't directly helpful. We'll need more complicated queries to get actually useful information. To start out, let's see how many diagnosis records there are with the "N18" code.
+
+```sql
+select count(*) from diagnosis where diagnosis.icd_code = 'N18';
+```
+
+Potentially interesting, but there's still a lot more we can do. Next, we'll use a nested select statement to pull up all the patient IDs associated with the "N18" ICD code.
 
 ```sql
 select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18');
@@ -113,6 +119,18 @@ We could even go the other direction and find all the encounter IDs for every pa
 
 ```sql
 select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18'));
+```
+
+If we want to use a quadruple select statement, we could even get all the diagnoses for every patient with the "N18" code.
+
+```sql
+select diagnosis.diagnosis_id from diagnosis where diagnosis.encounter_id in (select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18')));
+```
+
+Again, that's neat, but this still hasn't helped us gain much of an understanding about CKD. What if we combined the last two sections and queried for the 50 most common diagnoses for people with CKD?
+
+```sql
+select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select diagnosis.diagnosis_id from diagnosis where diagnosis.encounter_id in (select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18')))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
 ```
 
 ### Common Problems
