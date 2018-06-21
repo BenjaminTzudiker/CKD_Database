@@ -95,10 +95,10 @@ Since columns like specialty_id might show up in multiple tables, it can be impo
 
 Using the power of our new database, we can start to find relevant information across multiple tables. Say we want information on Chronic Kidney Disease. Information on who is affected by CKD would likely be found in the diagnosis table - and indeed, there is a column that lists the ICD codes for every diagnosis. [Using the internet](https://icdcodelookup.com/icd-10/codes/Chronic%20Kidney%20Disease), we can start to narrow down which codes we're actually interested in. While the diagnosis table doesn't contain all the information we need directly, every row does contain an encounter ID. Using this ID, we can find the corresponding row in the encounter table, and from there find the patient ID to link us to the patient table.
 
-How would these queries look? Let's start out by selecting all the diagnoses related to CKD. For this example, we'll just get the encounter IDs for every instance of the "N18" ICD code. Note that with large tables, these queries are probably going to take a bit of time.
+How would these queries look? Let's start out by selecting all the diagnoses related to CKD. For this example, we'll just get the encounter IDs for every instance of the "N18" ICD code. The N18 code has several different subcodes for severity; we'll include them all by using the "%" wildcard. Note that with large tables, these queries are probably going to take a bit of time.
 
 ```sql
-select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18';
+select diagnosis.encounter_id from diagnosis where diagnosis.icd_code LIKE 'N18%';
 ```
 
 We could add in/replace that with other codes depending on what we want to find out about. If we wanted a look at every encounter related to CKD, we could add in codes like E08.22 - E13.22, O10.2 - O10.3, and so on. There are plenty of ways to refine your queries to get exactly the information you need.
@@ -106,40 +106,60 @@ We could add in/replace that with other codes depending on what we want to find 
 This is neat, but a list of numbers isn't directly helpful. We'll need more complicated queries to get actually useful information. To start out, let's see how many diagnosis records there are with the "N18" code.
 
 ```sql
-select count(*) from diagnosis where diagnosis.icd_code = 'N18';
+select count(*) from diagnosis where diagnosis.icd_code LIKE 'N18%';
 ```
 
 Potentially interesting, but there's still a lot more we can do. Next, we'll use a nested select statement to pull up all the patient IDs associated with the "N18" ICD code.
 
 ```sql
-select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18');
+select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code LIKE 'N18%');
 ```
 
 We could even go the other direction and find all the encounter IDs for every patient associated with CKD.
 
 ```sql
-select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18'));
+select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code LIKE 'N18%'));
 ```
 
 If we want to use a quadruple select statement, we could even get all the diagnoses for every patient with the "N18" code.
 
 ```sql
-select diagnosis.diagnosis_id from diagnosis where diagnosis.encounter_id in (select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18')));
+select diagnosis.diagnosis_id from diagnosis where diagnosis.encounter_id in (select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code LIKE 'N18%')));
 ```
 
 Again, that's neat, but this still hasn't helped us gain much of an understanding about CKD. What if we combined the last two sections and queried for the 50 most common diagnoses for people with CKD?
 
 ```sql
-select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select diagnosis.diagnosis_id from diagnosis where diagnosis.encounter_id in (select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18')))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
+select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select diagnosis.diagnosis_id from diagnosis where diagnosis.encounter_id in (select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code LIKE 'N18%')))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
 ```
 
-We can compare this to the overall numbers for all diagnoses.
+We can compare this with the overall numbers for all diagnoses.
 
 ```sql
 select icd_code as 'ICD Code', count(icd_code) as 'Number of Diagnoses' from diagnosis group by icd_code order by count(icd_code) desc limit 50;
 ```
 
 This is only a taste - there are all sorts of useful queries you can perform with an understanding of the data and a bit of thought.
+
+### File Descriptions
+
+./CKD_Data_Dictionary_DataExchangev1_FINAL_DRAFT.docx 
+Provided by the previous maintainers of the database, this file contains information on the structure of the database. It has a couple of errors, but is otherwise up to date for the database created by the main script.
+
+./Create_Tables_New.sql 
+The primary sql script, which will set up and load into the tables according to the data dictionary document. Written for MySQL.
+
+./DatabaseDiagram.png 
+Diagram of database tables and relationships for people without easy access to Microsoft Word.
+
+./Normalize_Tables.sql 
+A secondary sql script that will alter the table structure and manipulate the data to remove some duplicate strings. It will also create views for the altered tables that correspond with the originals, each named <original_table_name>_view.
+
+./Old SQL
+Contains the old Postgres files originally used to make the database, as well as a handful of miscellanious MySQL files not needed for normal operation.
+
+./readme.md
+Markdown file that contains information on setting up and using the database. It also contains this sentence.
 
 ### Common Problems
 
@@ -172,6 +192,10 @@ Mac:
 ```
 /usr/local/mysql/bin/mysql -u <user> [-p] --local-infile
 ```
+
+#### The MySQL installation didn't prompt me to enter a root password
+
+In some cases, the root will default to not having a password. In others, it won't. There are a number of ways to fix this, the simplest of which is to sudo into root using `sudo mysql -u root`. From there, you can manually set the password, or just keep using sudo to access the database. Using `sudo mysql_secure_installation` is another possible way to set the root password. The specifics may vary from version to version.
 
 #### MySQL error on load data local infile - "The used command is not allowed with this MySQL version"
 
