@@ -133,6 +133,14 @@ Again, that's neat, but this still hasn't helped us gain much of an understandin
 select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select diagnosis.diagnosis_id from diagnosis where diagnosis.encounter_id in (select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18')))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
 ```
 
+We can compare this to the overall numbers for all diagnoses.
+
+```sql
+select icd_code as 'ICD Code', count(icd_code) as 'Number of Diagnoses' from diagnosis group by icd_code order by count(icd_code) desc limit 50;
+```
+
+This is only a taste - there are all sorts of useful queries you can perform with an understanding of the data and a bit of thought.
+
 ### Common Problems
 
 #### MySQL won't start - `mysql` gives a "command not found" or similar error
