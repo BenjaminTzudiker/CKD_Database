@@ -51,7 +51,7 @@ show engine innodb status;
 
 Look for "undo log entries", which should be followed by the number of rows. Some examples of commands to find the total number of lines in a file are `wc -l <path_to_file>` for Unix systems or `find /c /v ""` for Winodws - the proportion of completed rows to total rows should give a rough estimate of progress. Note that an import will likely slow down once the buffer pool runs out.
 
-Other information - for example, the number of seconds spent executing the current query or how much of the buffer is in use - can be found elsewhere.
+Other information - for example, the number of seconds spent executing the current query or how much of the buffer is in use - can be found elsewhere in the status.
 
 ### (Optional) Normalizing/Indexing the Database
 
@@ -67,7 +67,7 @@ If you anticipate the need to perform lots of intensive queries, it might be sma
 
 ### Querying the Database
 
-#### Examples
+#### Quick Examples
 
 You can now query the database to get all kinds of useful and/or interesting information. For example, this query shows what percentage of providers fall under each listed specialty, ignoring unspecified entries.
 
@@ -77,11 +77,19 @@ Unnormalized:
 select specialty as Specialty, count(visit_provider_id) as Providers, count(visit_provider_id)/(select count(visit_provider_id) from provider where not specialty = 'Unspecified Primary Specialty')*100 as Percent from provider where not specialty = 'Unspecified Primary Specialty' group by specialty order by count(visit_provider_id) desc;
 ```
 
-Normalized:
+Normalized, using the view as a stand-in for the original table:
 
 ```sql
 select specialty as Specialty, count(visit_provider_id) as Providers, count(visit_provider_id)/(select count(visit_provider_id) from provider_view where not specialty = 'Unspecified Primary Specialty')*100 as Percent from provider_view where not specialty = 'Unspecified Primary Specialty' group by specialty order by count(visit_provider_id) desc;
 ```
+
+Normalized, comparing IDs instead of full strings:
+
+```sql
+select provider_specialty.specialty as Specialty, count(visit_provider_id) as Providers, count(visit_provider_id)/(select count(visit_provider_id) from provider where not provider.specialty_id = (select provider_specialty.specialty_id from provider_specialty where specialty = 'Unspecified Primary Specialty'))*100 as Percent from provider inner join provider_specialty on provider.specialty_id = provider_specialty.specialty_id where not provider.specialty_id = (select provider_specialty.specialty_id from provider_specialty where specialty = 'Unspecified Primary Specialty') group by specialty order by count(visit_provider_id) desc;
+```
+
+Since columns like specialty_id might show up in multiple tables, it can be important to specify where they come from. In this case, comparing by IDs in the normalized table produces a more complicated SQL statement (although much of the complexity is removed if we know the ID of "Unspecified Primary Specialty" beforehand), but comparing integers is generally faster than comparing strings.
 
 #### CKD
 
@@ -90,7 +98,7 @@ Using the power of our new database, we can start to find relevant information a
 How would these queries look? Let's start out by selecting all the diagnoses related to CKD. For this example, we'll just get the encounter IDs for every instance of the "N18" ICD code. Note that with large tables, these queries are probably going to take a bit of time.
 
 ```sql
-select encounter_id from diagnosis where icd_code = 'N18';
+select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18';
 ```
 
 We could add in/replace that with other codes depending on what we want to find out about. If we wanted a look at every encounter related to CKD, we could add in codes like E08.22 - E13.22, O10.2 - O10.3, and so on. There are plenty of ways to refine your queries to get exactly the information you need.
@@ -98,7 +106,13 @@ We could add in/replace that with other codes depending on what we want to find 
 Next, we can use a nested select statement to pull up all the patient IDs associated with the "N18" ICD code.
 
 ```sql
-select patient_id from encounter where encounter_id in (select encounter_id from diagnosis where icd_code = 'N18');
+select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18');
+```
+
+We could even go the other direction and find all the encounter IDs for every patient associated with CKD.
+
+```sql
+select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code = 'N18'));
 ```
 
 ### Common Problems
