@@ -10,7 +10,7 @@ Launch your preferred command line application - most likely Command Prompt in W
 
 #### Launching MySQL
 
-Launch the MySQL server, and connect to it using the following command.
+[Launch the MySQL server](https://dev.mysql.com/doc/refman/8.0/en/windows-start-command-line.html) if it isn't [online already](https://dev.mysql.com/doc/refman/8.0/en/show-status.html), and connect to it using the following command.
 
 ```sql
 mysql -u <user> [-p] --local-infile
@@ -33,13 +33,13 @@ Before running the Create_Tables_New.sql script, it is reccomended that you chan
 
 #### Running the main script file
 
-Still in SQL, run the Create_Tables_New.sql script.
+Still in SQL, run the Create_Tables_New.sql script. This file will create all the tables according to the CKD data dictionary document (with a handful of small exceptions marked in the file) and load the information from the csv files into them.
 
 ```sql
 source <path_to_script>;
 ```
 
-This could easily take days to execute, as there are lots of data that need to be imported.
+This could easily take days to execute, as there is lots of data that needs to be imported.
 
 #### Progress
 
@@ -49,7 +49,7 @@ By default, the import command does not say how far along it is. If you are usin
 show engine innodb status;
 ```
 
-Look for "undo log entries", which should be followed by the number of rows. Some examples of commands to find the number of lines in a file are `wc -l <path_to_file>` for Unix systems or `find /c /v ""` for Winodws.
+Look for "undo log entries", which should be followed by the number of rows. Some examples of commands to find the total number of lines in a file are `wc -l <path_to_file>` for Unix systems or `find /c /v ""` for Winodws - the proportion of completed rows to total rows should give a rough estimate of progress. Note that an import will likely slow down once the buffer pool runs out.
 
 Other information - for example, the number of seconds spent executing the current query or how much of the buffer is in use - can be found elsewhere.
 
@@ -57,13 +57,13 @@ Other information - for example, the number of seconds spent executing the curre
 
 #### Normalizing
 
-There is another script called Normalize_Tables.sql that will separate a handful of tables to remove some of the duplicate strings. While entirely optional, it might significantly recude the storage space required for some tables. The script is meant to be called after creating the original tables as per the previous instructions - if you know you'll want to normalize them, it might be more efficient to modify the abov script to load the csv files directly into separte tables.
+There is another script called Normalize_Tables.sql that will separate a handful of tables to remove some (but not all - notable exceptions include the ICD codes from the diagnosis table, although removing more duplicates is fairly striaghtforward) of the duplicate strings. While entirely optional, it might significantly recude the storage space required for some tables. The script is meant to be called after creating the original tables as per the previous instructions - if you know you'll want to normalize them, it might be more efficient to modify the import script to load the csv files directly into separte tables.
 
 Running this script will mean that the database is no longer structured internally according to the CKD data dictionary document. However, the script creates a view for each table that joins the information automatically to get the original setup.
 
 #### Indexing
 
-If you anticipate the need to perform lots of intensive queries, it might be smart to index parts of it. The main script doesn't index in order to speed up the import.
+If you anticipate the need to perform lots of intensive queries, it might be smart to index parts of the database. The main script doesn't index in order to speed up the import.
 
 ### Querying the Database
 
@@ -81,6 +81,24 @@ Normalized:
 
 ```sql
 select specialty as Specialty, count(visit_provider_id) as Providers, count(visit_provider_id)/(select count(visit_provider_id) from provider_view where not specialty = 'Unspecified Primary Specialty')*100 as Percent from provider_view where not specialty = 'Unspecified Primary Specialty' group by specialty order by count(visit_provider_id) desc;
+```
+
+#### CKD
+
+Using the power of our new database, we can start to find relevant information across multiple tables. Say we want information on Chronic Kidney Disease. Information on who is affected by CKD would likely be found in the diagnosis table - and indeed, there is a column that lists the ICD codes for every diagnosis. [Using the internet](https://icdcodelookup.com/icd-10/codes/Chronic%20Kidney%20Disease), we can start to narrow down which codes we're actually interested in. While the diagnosis table doesn't contain all the information we need directly, every row does contain an encounter ID. Using this ID, we can find the corresponding row in the encounter table, and from there find the patient ID to link us to the patient table.
+
+How would these queries look? Let's start out by selecting all the diagnoses related to CKD. For this example, we'll just get the encounter IDs for every instance of the "N18" ICD code. Note that with large tables, these queries are probably going to take a bit of time.
+
+```sql
+select encounter_id from diagnosis where icd_code = 'N18';
+```
+
+We could add in/replace that with other codes depending on what we want to find out about. If we wanted a look at every encounter related to CKD, we could add in codes like E08.22 - E13.22, O10.2 - O10.3, and so on. There are plenty of ways to refine your queries to get exactly the information you need.
+
+Next, we can use a nested select statement to pull up all the patient IDs associated with the "N18" ICD code.
+
+```sql
+select patient_id from encounter where encounter_id in (select encounter_id from diagnosis where icd_code = 'N18');
 ```
 
 ### Common Problems
