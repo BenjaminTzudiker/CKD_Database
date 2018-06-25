@@ -112,25 +112,25 @@ select count(*) from diagnosis d1 where d1.icd_code LIKE 'N18%';
 Potentially interesting, but there's still a lot more we can do. Next, we'll use a nested select statement to pull up all the patient IDs associated with the "N18" ICD code.
 
 ```sql
-select unique e1.patient_id from encounter e1 where exists (select d1.encounter_id from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%');
+select distinct e1.patient_id from encounter e1 where exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%');
 ```
 
 Note the use of the "exists" statement - this will likely be faster than an "in" statement for larger data sets since it aborts the subquery as soon as the first match is found. We could even go back in the other direction and find all the encounter IDs for every patient associated with CKD.
 
 ```sql
-select e2.encounter_id from encounter e2 where exists (select unique e1.patient_id from encounter e1 where e1.patient_id = e2.patient_id and exists (select d1.encounter_id from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%'));
+select e2.encounter_id from encounter e2 where exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%'));
 ```
 
 If we want to use a quadruple select statement, we could even get all the diagnoses for every patient with the "N18" code.
 
 ```sql
-select d2.diagnosis_id from diagnosis d2 where exists (select e2.encounter_id from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select unique e1.patient_id from encounter e1 where e1.patient_id = e2.patient_id and exists (select d1.encounter_id from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')));
+select d2.diagnosis_id from diagnosis d2 where exists (select 1 from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')));
 ```
 
 Again, that's neat, but this still hasn't helped us gain much of an understanding about CKD. What if we combined the last two sections and queried for the 50 most common diagnoses for people with CKD?
 
 ```sql
-select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select d2.diagnosis_id from diagnosis d2 where exists (select e2.encounter_id from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select unique e1.patient_id from encounter e1 where e1.patient_id = e2.patient_id and exists (select d1.encounter_id from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
+select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select 1 from diagnosis d2 where exists (select 1 from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
 ```
 
 We can compare this with the overall numbers for all diagnoses.
