@@ -1,8 +1,14 @@
-## Creating the Database
+# CKD Database
+
+## PostgreSQL
+
+## MySQL
 
 ### Preparation
 
 #### Installing MySQL
+
+Note that the table import in MySQL might take considerably longer than with PostgreSQL.
 
 To begin, you will need the csv files that will be imported into the database. Next, install MySQL for your operating system, which is available [here](https://dev.mysql.com/downloads/mysql/). Creating the tables should work in Postgres or other similar database management systems with only small modifications, but importing files might be quite different.
 
@@ -141,26 +147,6 @@ select icd_code as 'ICD Code', count(icd_code) as 'Number of Diagnoses' from dia
 
 This is only a taste - there are all sorts of useful queries you can perform with an understanding of the data and a bit of thought.
 
-### File Descriptions
-
-./CKD_Data_Dictionary_DataExchangev1_FINAL_DRAFT.docx 
-Provided by the previous maintainers of the database, this file contains information on the structure of the database. It has a couple of errors, but is otherwise up to date for the database created by the main script.
-
-./Create_Tables_New.sql 
-The primary sql script, which will set up and load into the tables according to the data dictionary document. Written for MySQL.
-
-./DatabaseDiagram.png 
-Diagram of database tables and relationships for people without easy access to Microsoft Word.
-
-./Normalize_Tables.sql 
-A secondary sql script that will alter the table structure and manipulate the data to remove some duplicate strings. It will also create views for the altered tables that correspond with the originals, each named <original_table_name>_view.
-
-./Old SQL
-Contains the old Postgres files originally used to make the database, as well as a handful of miscellanious MySQL files not needed for normal operation.
-
-./readme.md
-Markdown file that contains information on setting up and using the database. It also contains this sentence.
-
 ### Common Problems
 
 #### MySQL won't start - `mysql` gives a "command not found" or similar error
@@ -208,3 +194,23 @@ set global local_infile = 1;
 #### MySQL error on load data local infile - "File './filename' not found"
 
 MySQL couldn't locate one or more of the csv files. Make sure you changed the working directory to the location of all the files that need to be imported, and that all the files are named properly. If all else fails, try typing out the full path of the file in place of the relative path used by default (using forward slashes even on Windows).
+
+## File Descriptions
+
+./CKD_Data_Dictionary_DataExchangev1_FINAL_DRAFT.docx 
+Provided by the previous maintainers of the database, this file contains information on the structure of the database. It has a couple of errors, but is otherwise up to date for the database created by the main script.
+
+./DatabaseDiagram.png 
+Diagram of database tables and relationships for people without easy access to Microsoft Word.
+
+./MySQL/Create_Tables_New.sql 
+The primary sql script, which will set up and load into the tables according to the data dictionary document. Written for MySQL.
+
+./MySQL/Normalize_Tables.sql 
+A secondary sql script that will alter the table structure and manipulate the data to remove some duplicate strings. It will also create views for the altered tables that correspond with the originals, each named <original_table_name>_view.
+
+./Old SQL
+Contains the old Postgres files originally used to make the database, as well as a handful of miscellanious MySQL files not needed for normal operation.
+
+./readme.md
+Markdown file that contains information on setting up and using the database. It also contains this sentence.
