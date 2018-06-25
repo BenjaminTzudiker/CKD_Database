@@ -98,7 +98,7 @@ Using the power of our new database, we can start to find relevant information a
 How would these queries look? Let's start out by selecting all the diagnoses related to CKD. For this example, we'll just get the encounter IDs for every instance of the "N18" ICD code. The N18 code has several different subcodes for severity; we'll include them all by using the "%" wildcard. Note that with large tables, these queries are probably going to take a bit of time.
 
 ```sql
-select diagnosis.encounter_id from diagnosis where diagnosis.icd_code LIKE 'N18%';
+select d1.encounter_id from diagnosis d1 where d1.icd_code LIKE 'N18%';
 ```
 
 We could add in/replace that with other codes depending on what we want to find out about. If we wanted a look at every encounter related to CKD, we could add in codes like E08.22 - E13.22, O10.2 - O10.3, and so on. There are plenty of ways to refine your queries to get exactly the information you need.
@@ -106,31 +106,31 @@ We could add in/replace that with other codes depending on what we want to find 
 This is neat, but a list of numbers isn't directly helpful. We'll need more complicated queries to get actually useful information. To start out, let's see how many diagnosis records there are with the "N18" code.
 
 ```sql
-select count(*) from diagnosis where diagnosis.icd_code LIKE 'N18%';
+select count(*) from diagnosis d1 where d1.icd_code LIKE 'N18%';
 ```
 
 Potentially interesting, but there's still a lot more we can do. Next, we'll use a nested select statement to pull up all the patient IDs associated with the "N18" ICD code.
 
 ```sql
-select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code LIKE 'N18%');
+select unique e1.patient_id from encounter e1 where exists (select d1.encounter_id from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%');
 ```
 
-We could even go the other direction and find all the encounter IDs for every patient associated with CKD.
+Note the use of the "exists" statement - this will likely be faster than an "in" statement for larger data sets since it aborts the subquery as soon as the first match is found. We could even go back in the other direction and find all the encounter IDs for every patient associated with CKD.
 
 ```sql
-select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code LIKE 'N18%'));
+select e2.encounter_id from encounter e2 where exists (select unique e1.patient_id from encounter e1 where e1.patient_id = e2.patient_id and exists (select d1.encounter_id from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%'));
 ```
 
 If we want to use a quadruple select statement, we could even get all the diagnoses for every patient with the "N18" code.
 
 ```sql
-select diagnosis.diagnosis_id from diagnosis where diagnosis.encounter_id in (select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code LIKE 'N18%')));
+select d2.diagnosis_id from diagnosis d2 where exists (select e2.encounter_id from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select unique e1.patient_id from encounter e1 where e1.patient_id = e2.patient_id and exists (select d1.encounter_id from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')));
 ```
 
 Again, that's neat, but this still hasn't helped us gain much of an understanding about CKD. What if we combined the last two sections and queried for the 50 most common diagnoses for people with CKD?
 
 ```sql
-select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select diagnosis.diagnosis_id from diagnosis where diagnosis.encounter_id in (select encounter.encounter_id from encounter where encounter.patient_id in (select encounter.patient_id from encounter where encounter.encounter_id in (select diagnosis.encounter_id from diagnosis where diagnosis.icd_code LIKE 'N18%')))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
+select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select d2.diagnosis_id from diagnosis d2 where exists (select e2.encounter_id from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select unique e1.patient_id from encounter e1 where e1.patient_id = e2.patient_id and exists (select d1.encounter_id from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
 ```
 
 We can compare this with the overall numbers for all diagnoses.
@@ -207,4 +207,4 @@ set global local_infile = 1;
 
 #### MySQL error on load data local infile - "File './filename' not found"
 
-MySQL couldn't locate one or more of the csv files. Make sure you changed the working directory to the location of all the files that need to be imported, and that all the files are named properly.
+MySQL couldn't locate one or more of the csv files. Make sure you changed the working directory to the location of all the files that need to be imported, and that all the files are named properly. If all else fails, try typing out the full path of the file in place of the relative path used by default (using forward slashes even on Windows).
