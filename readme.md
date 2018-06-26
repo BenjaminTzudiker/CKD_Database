@@ -272,10 +272,10 @@ MySQL couldn't locate one or more of the csv files. Make sure you changed the wo
 
 ## File Descriptions
 
-./CKD_Data_Dictionary_DataExchangev1_FINAL_DRAFT.docx 
+./docs/CKD_Data_Dictionary_DataExchangev1_FINAL_DRAFT.docx 
 Provided by the previous maintainers of the database, this file contains information on the structure of the database. It has a couple of errors, but is otherwise up to date for the database created by the main script.
 
-./DatabaseDiagram.png 
+./docs/DatabaseDiagram.png 
 Diagram of database tables and relationships for people without easy access to Microsoft Word.
 
 ./MySQL/Create_Tables_New.sql 
