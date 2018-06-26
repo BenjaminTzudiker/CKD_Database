@@ -2,9 +2,48 @@
 
 ## PostgreSQL
 
+### Preparation
+
+#### Installing Postgres
+
+To begin, you will need the csv files that will be imported into the database. Next, install Postgres for your operating system. Installers for various operating systems are available [here](https://www.postgresql.org/download/), and other options like Homebrew for OSX are available.
+
+Launch your preferred command line application - most likely Command Prompt in Windows or Terminal in MacOS or Linux.
+
+#### Launching Postgres
+
+[Launch the Postgres server](https://www.postgresql.org/docs/9.1/static/server-start.html) if it isn't up yet and connect to it using the following command.
+
+```
+psql -U <user>
+```
+
+A user should have been created during installation - if you're not sure what user to use, try root or postgres. You will then be prompted for a password if applicable, which should have also been set during installation. Again, try root, postgres, or just entering a blank password if you're not sure. Depending on your system, it might not type anything in the command prompt while entering a password for security reasons.
+
+Next, you'll need to create the database if one doesn't already exist.
+
+```sql
+create database ckd;
+\c ckd;
+```
+
+### Creating/Loading the Tables
+
+#### Running the main script file
+
+Still in SQL, run the Create_LoadTables.sql script located in the Postgres folder. This file will create all the tables according to the CKD data dictionary document (with a handful of small exceptions marked in the file) and load the information from the csv files into them.
+
+```sql
+\i <path_to_script>;
+```
+
+Check the common problems section if you run into a permission error.
+
+This could easily take days to execute, as there is lots of data that needs to be imported.
+
 ### Common Problems
 
-#### Postgres won't start - `psql` gives a "command not found" or similar error
+#### Postgres won't start - psql gives a "command not found" or similar error
 
 Assuming you installed Postgres properly, this is most likely because psql is not added to your system's PATH variable. To fix this, either [add Postgres to the PATH](https://www.postgresql.org/docs/9.1/static/install-post.html) or specify the path to the MySQL executable manually. For the second option, you will need to find the location of the psql executable, which varies between installations and operating systems. Some possible locations are listed below.
 
@@ -20,7 +59,7 @@ Mac:
 /usr/local/Cellar/postgresql/10.4/bin/psql
 ```
 
-Version numbers may be different, and the /usr folder on Mac (most likely located in the root "/" directory, not the "~" user directory) might be hidden by default. The Mac version for this installation was installed using Homebrew. Logging into the database should now look something like this.
+Version numbers may be different, and the /usr folder on Mac (located in the root "/" directory, not the "~" user directory) might be hidden by default. The Mac version for this installation was installed using Homebrew. Logging into the database should now look something like this.
 
 Windows:
 
@@ -185,7 +224,7 @@ This is only a taste - there are all sorts of useful queries you can perform wit
 
 ### Common Problems
 
-#### MySQL won't start - `mysql` gives a "command not found" or similar error
+#### MySQL won't start - mysql gives a "command not found" or similar error
 
 Assuming you installed MySQL properly, this is most likely because MySQL is not added to your system's PATH variable. To fix this, either [add MySQL to the PATH](https://dev.mysql.com/doc/mysql-windows-excerpt/5.7/en/mysql-installation-windows-path.html) or specify the path to the MySQL executable manually. For the second option, you will need to find the location of the MySQL executable, which varies between installations and operating systems. Some possible locations are listed below.
 
@@ -201,7 +240,7 @@ Mac:
 /usr/local/mysql/bin/mysql
 ```
 
-Version numbers may be different, and the /usr folder on Mac (most likely located in the root "/" directory, not the "~" user directory) might be hidden by default. Logging into the database should now look something like this.
+Version numbers may be different, and the /usr folder on Mac (located in the root "/" directory, not the "~" user directory) might be hidden by default. Logging into the database should now look something like this.
 
 Windows:
 
