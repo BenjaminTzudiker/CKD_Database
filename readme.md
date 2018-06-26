@@ -2,7 +2,9 @@
 
 ## PostgreSQL
 
-If you use a Windows machine, it may be easier to use the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+### Common Problems
+
+In some cases,  You might also be able to use the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for Windows to run the normal script.
 
 ## MySQL
 

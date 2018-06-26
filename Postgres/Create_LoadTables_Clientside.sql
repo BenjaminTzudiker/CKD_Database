@@ -29,13 +29,7 @@ create table site_source
 );
 
 truncate table site_source cascade;
-copy site_source
-(site_source
-,name
-)
-from :path_site_source
-with delimiter as ','  null as '' csv header quote as '"'
-;
+\copy site_source (site_source, name) from '/Users/benjamintzudiker/Documents/SQL/Site_Source.csv' with delimiter as ','  null as '' csv header quote as '"';
 
 
 create table provider      
