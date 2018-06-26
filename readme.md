@@ -27,6 +27,18 @@ create database ckd;
 \c ckd;
 ```
 
+#### Setting the Path
+
+Inside the main script file, you will need to specify where to find the csv files. Open Postgres/Create_LoadTables.csv and find a line that looks like this close to the top of the file.
+
+```sql
+\set path '''<path_to_csv>/'
+```
+
+You will need to enter the correct path to the csv files on your system. For example, if you have the files stored in a folder called ckd in your Documents folder, your path might look like `C:/Users/ExampleUsername/Documents/ckd`. In that case, the line above would look like `\set path '''C:/Users/ExampleUsername/Documents/ckd/'`. Make sure the quotes and extra slash at the end are included properly.
+
+If you're using the Create_LoadTables_Clientside.sql file, you'll need to set the path individually for each \copy meta-command.
+
 ### Creating/Loading the Tables
 
 #### Running the main script file
