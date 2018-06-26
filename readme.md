@@ -2,13 +2,15 @@
 
 ## PostgreSQL
 
+If you use a Windows machine, it may be easier to use the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+
 ## MySQL
 
 ### Preparation
 
 #### Installing MySQL
 
-Note that the table import in MySQL might take considerably longer than with PostgreSQL.
+_Note that the table import in MySQL might take considerably longer than with PostgreSQL._
 
 To begin, you will need the csv files that will be imported into the database. Next, install MySQL for your operating system, which is available [here](https://dev.mysql.com/downloads/mysql/). Creating the tables should work in Postgres or other similar database management systems with only small modifications, but importing files might be quite different.
 
