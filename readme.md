@@ -4,7 +4,9 @@
 
 ### Common Problems
 
-In some cases,  You might also be able to use the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for Windows to run the normal script.
+#### Permission denied for csv files in the copy query
+
+In some cases, the postgres system user might not have permission to read the required files. If you're unable to grant those permissions, try running the Create_LoadTables_Clientside.sql file instead of the Create_LoadTables.sql file. This uses the postgres meta-command \copy, which doesn't require the postgres server user to have permission. You'll need to set the path for each copy statement instead of simply changing the postgres variables. You might also be able to use the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for Windows to run the normal script.
 
 ## MySQL
 
@@ -215,6 +217,12 @@ A secondary sql script that will alter the table structure and manipulate the da
 
 ./Old SQL
 Contains the old Postgres files originally used to make the database, as well as a handful of miscellanious MySQL files not needed for normal operation.
+
+./Postgres/Create_LoadTables.sql
+The primary sql script, which will set up and load into the tables according to the data dictionary document. Written for PostgreSQL.
+
+./Postgres/Create_LoadTables_Clientside.sql
+The primary sql script, which will set up and load into the tables according to the data dictionary document. Written for PostgreSQL. This version of the script use the meta-command \copy that avoids some permissions issues.
 
 ./readme.md
 Markdown file that contains information on setting up and using the database. It also contains this sentence.

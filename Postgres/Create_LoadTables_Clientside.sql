@@ -1,4 +1,4 @@
--- PSQL variables don't work with the local \copy
+-- PSQL variables don't work easily with \copy
 /*\set path '''/Users/benjamintzudiker/Documents/SQL/'
 
 \set path_site_source :path 'Site_Source.csv'''
