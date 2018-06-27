@@ -1,3 +1,5 @@
+\c ckd;
+
 -- Edit the path variable to point inside the folder where your csv files are stored
 \set path '''/Users/benjamintzudiker/Documents/SQL/'
 

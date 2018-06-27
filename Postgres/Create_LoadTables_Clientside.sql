@@ -1,3 +1,5 @@
+\c ckd;
+
 -- PSQL variables don't work easily with \copy
 /*\set path '''/Users/benjamintzudiker/Documents/SQL/'
 
