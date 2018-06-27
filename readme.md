@@ -37,7 +37,7 @@ Inside the main script file, you will need to specify where to find the csv file
 
 You will need to enter the correct path to the csv files on your system. For example, if you have the files stored in a folder called ckd in your Documents folder, your path might look like `C:/Users/ExampleUsername/Documents/ckd`. In that case, the line above would look like `\set path '''C:/Users/ExampleUsername/Documents/ckd/'`. Make sure the quotes and extra slash at the end are included properly.
 
-If you're using the Create_LoadTables_Clientside.sql file, you'll need to set the path individually for each \copy meta-command.
+If you're using the Create_LoadTables_Clientside.sql file (described in the permission error section of the common problems section), you'll need to set the path individually for each \copy meta-command.
 
 ### Creating/Loading the Tables
 
@@ -52,6 +52,10 @@ Still in SQL, run the Create_LoadTables.sql script located in the Postgres folde
 Check the common problems section if you run into a permission error.
 
 This could easily take days to execute, as there is lots of data that needs to be imported.
+
+#### Progress
+
+Unfortunately, there isn't an easy way to see how many lines have been imported like with MySQL's `show engine innodb status`. A quick way to get a rough estimate is to look in the actual data folder inside postgres to see how much is being stored - however, the files will most likely add up to more thn the csv file once the copy is complete. Some information on the current queries can be found by running `select * from pg_stat_activity;` in another postgres window.
 
 ### Common Problems
 
