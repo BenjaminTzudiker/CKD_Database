@@ -51,11 +51,109 @@ Still in SQL, run the Create_LoadTables.sql script located in the Postgres folde
 
 Check the common problems section if you run into a permission error.
 
-This could easily take days to execute, as there is lots of data that needs to be imported.
+Whlie Postgres will likely import more quickly than MySQL, this still might take some time.
 
 #### Progress
 
-Unfortunately, there isn't an easy way to see how many lines have been imported like with MySQL's `show engine innodb status`. A quick way to get a rough estimate is to look in the actual data folder inside postgres to see how much is being stored - however, the files will most likely add up to more thn the csv file once the copy is complete. Some information on the current queries can be found by running `select * from pg_stat_activity;` in another postgres window.
+Unfortunately, there isn't an easy way to see how many lines have been imported like with MySQL's `show engine innodb status`. A quick way to get a rough estimate is to look in the actual data folder inside postgres to see how much is being stored - however, the files will most likely add up to more thn the csv file once the copy is complete.
+
+Some information on the current queries can be found by running `select * from pg_stat_activity;` in another postgres window. Sometimes a Postgres operation might get stuck in an idle state after completing, so it can be good to check if a query has been going on a long time - although the copy queries will almost certainly take a long time anyways. To check, look for the status column. If it's running, it will say active in the row with the copy query. If it's idle and doesn't finish the query, you may need to kill it. See the common problems section for help with this.
+
+Before running a query, you can enter `\timing` into Postgres - this won't give you mid-query progress reports, but it will make queries print out their execution time after they complete.
+
+### Querying the Database
+
+#### Quick Examples
+
+You can now query the database to get all kinds of useful and/or interesting information. For example, this query shows what percentage of providers fall under each listed specialty.
+
+```sql
+select specialty as Specialty, count(visit_provider_id) as Providers, count(visit_provider_id)::float/(select count(visit_provider_id) from provider)*100 as Percent from provider group by specialty order by count(visit_provider_id) desc;
+```
+
+ Here is another example which ignores unspecified entries.
+
+```sql
+select specialty as Specialty, count(visit_provider_id) as Providers, count(visit_provider_id)::float/(select count(visit_provider_id) from provider where not specialty = 'Unspecified Primary Specialty')*100 as Percent from provider where not specialty = 'Unspecified Primary Specialty' group by specialty order by count(visit_provider_id) desc;
+```
+
+In Postgres, the "/" operator is an integer operator, which means that we need to manually mark the dividend or divisor as a float (or similar) to get it to perform division like we want.
+
+#### Demographical Information
+
+Often times, it can be important to get basic demographical information for data sets like these. As an example, below is a query that returns the number of patients recorded that are born in each year.
+
+```sql
+select date_part('year', date_of_birth), count(*) from patient group by date_part('year', date_of_birth) order by date_part('year', date_of_birth) desc;
+```
+
+We can restrict this to only the patients marked as alive.
+
+```sql
+select date_part('year', date_of_birth), count(*) from patient where vital_status = 'Alive' group by date_part('year', date_of_birth) order by date_part('year', date_of_birth) desc;
+```
+
+#### CKD/More Complicated Queries
+
+Using the power of our new database, we can start to find relevant information across multiple tables. Say we want information on Chronic Kidney Disease. Information on who is affected by CKD would likely be found in the diagnosis table - and indeed, there is a column that lists the ICD codes for every diagnosis. [Using the internet](https://icdcodelookup.com/icd-10/codes/Chronic%20Kidney%20Disease), we can start to narrow down which codes we're actually interested in. While the diagnosis table doesn't contain all the information we need directly, every row does contain an encounter ID. Using this ID, we can find the corresponding row in the encounter table, and from there find the patient ID to link us to the patient table.
+
+How would these queries look? Let's start out by selecting all the diagnoses related to CKD. For this example, we'll just get the encounter IDs for every instance of the "N18" ICD code. The N18 code has several different subcodes for severity; we'll include them all by using the "%" wildcard. Note that with large tables, these queries are probably going to take a bit of time.
+
+```sql
+select d1.encounter_id from diagnosis d1 where d1.icd_code LIKE 'N18%';
+```
+
+We could add in/replace that with other codes depending on what we want to find out about. If we wanted a look at every encounter related to CKD, we could add in codes like E08.22 - E13.22, O10.2 - O10.3, and so on. There are plenty of ways to refine your queries to get exactly the information you need.
+
+This is neat, but a list of numbers isn't directly helpful. We'll need more complicated queries to get actually useful information. To start out, let's see how many diagnosis records there are with the "N18" code.
+
+```sql
+select count(*) from diagnosis d1 where d1.icd_code LIKE 'N18%';
+```
+
+Potentially interesting, but there's still a lot more we can do. Next, we'll use a nested select statement to pull up all the patient IDs associated with the "N18" ICD code. In these examples, we'll be storing subqueries in temporary tables, as that might speed up the queries (especially if you plan to use the subquery multiple times). Below is the sql for the nested query, and then the sql for making a temporary table using the query's results.
+
+```sql
+select distinct e1.patient_id from encounter e1 where exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%');
+```
+```sql
+create temporary table patient_ckd as (select distinct e1.patient_id from encounter e1 where exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%'));
+```
+
+Note the use of the "exists" statement - this will likely be faster than an "in" statement for larger data sets since it aborts the subquery as soon as the first match is found. We could even go back in the other direction and find all the encounter IDs for every patient associated with CKD. If you're using temporary tables, you can use them in place of the more complicated nested query.
+
+```sql
+select e2.encounter_id from encounter e2 where exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%'));
+```
+```sql
+select e2.encounter_id from encounter e2 where exists (select 1 from patient_ckd e1 where e1.patient_id = e2.patient_id);
+```
+
+If we want to use a quadruple select statement, we could even get all the diagnoses for every patient with the "N18" code. A temporary table could be substituted for nested queries in the following statements in much the same manner.
+
+```sql
+select d2.diagnosis_id from diagnosis d2 where exists (select 1 from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')));
+```
+
+Again, that's neat, but this still hasn't helped us gain much of an understanding about CKD. What if we combined the last two sections and queried for the 50 most common diagnoses for people with CKD?
+
+```sql
+select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select 1 from diagnosis d2 where exists (select 1 from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
+```
+
+We can compare this with the overall numbers for all diagnoses.
+
+```sql
+select icd_code as 'ICD Code', count(icd_code) as 'Number of Diagnoses' from diagnosis group by icd_code order by count(icd_code) desc limit 50;
+```
+
+This isn't a perfect solution, as multiple diagnoses for a given code might have been given for a patient. A quick fix using the same query would be to insert another select statement inside the main select statement that pulls the icd code and patient id and checks for uniqueness.
+
+```sql
+select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select distinct icd_code, patient_id from (select 1 from diagnosis d2 where exists (select 1 from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%'))))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
+```
+
+This is only a taste - there are all sorts of useful queries you can perform with an understanding of the data and a bit of thought.
 
 ### Common Problems
 
@@ -92,6 +190,10 @@ Mac:
 #### Permission denied for csv files in the copy query
 
 In some cases, the postgres system user might not have permission to read the required files. If you're unable to grant those permissions, try running the Create_LoadTables_Clientside.sql file instead of the Create_LoadTables.sql file. This uses the postgres meta-command \copy, which doesn't require the postgres server user to have permission. You'll need to set the path for each copy statement instead of simply changing the postgres variables. You might also be able to use the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for Windows to run the normal script.
+
+#### Postgres queries stuck in idle state
+
+You may need to kill the query. There are a few ways to kill a query, most of which require the pid number in the stat activity table. The "friendliest" ways to kill a query are to use `select pg_cancel_backend(<pid>)` which will attempt to cancel and rollback the query, or `pg_terminate_background(<pid>)` which will kill the entire connection (and may mean you'll need to reetner any queued queries). If those don't work or if you don't want Postgres to roll back the changes, you can tell your system to kill the process outside of Postgres. In Windows, this would look like `taskkill /pid <pid>` or `taskkill /f /pid <pid>`. You may need to run command line with administrative priveleges to use the latter commands, and they may require you to reconnect to/restart Postgres.
 
 ## MySQL
 
@@ -206,7 +308,7 @@ This is neat, but a list of numbers isn't directly helpful. We'll need more comp
 select count(*) from diagnosis d1 where d1.icd_code LIKE 'N18%';
 ```
 
-Potentially interesting, but there's still a lot more we can do. Next, we'll use a nested select statement to pull up all the patient IDs associated with the "N18" ICD code.
+Potentially interesting, but there's still a lot more we can do. Next, we'll use a nested select statement to pull up all the patient IDs associated with the "N18" ICD code. For more complicated nested queries it might be a good idea to save the subquery results as a temporary table, especially if that same subquery might be used soon after.
 
 ```sql
 select distinct e1.patient_id from encounter e1 where exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%');
