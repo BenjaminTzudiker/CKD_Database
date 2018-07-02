@@ -150,8 +150,10 @@ select icd_code as 'ICD Code', count(icd_code) as 'Number of Diagnoses' from dia
 This isn't a perfect solution, as multiple diagnoses for a given code might have been given for a patient. A quick fix using the same query would be to insert another select statement inside the main select statement that pulls the icd code and patient id and checks for uniqueness.
 
 ```sql
-select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select distinct icd_code, patient_id from (select 1 from diagnosis d2 where exists (select 1 from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%'))))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
+select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select distinct b.icd_code, b.patient_id from (select 1 from diagnosis d2 where exists (select 1 from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')))) b) a group by a.icd_code order by count(a.icd_code) desc limit 50;
 ```
+
+This new select will give all the rows from the subquery that have a unique patient ID and ICD code. Now, even if a patient has multiple recorded diagnoses for any given code, they will only be counted once. As is to be expected from making a query more complicated, this will probably take a bit longer to execute - it's up to you as the person querying the data to decide if the extra time taken is worth it for what you're trying to do.
 
 This is only a taste - there are all sorts of useful queries you can perform with an understanding of the data and a bit of thought.
 
