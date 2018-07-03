@@ -105,7 +105,7 @@ select d1.encounter_id from diagnosis d1 where d1.icd_code LIKE 'N18%';
 
 We could add in/replace that with other codes depending on what we want to find out about. If we wanted a look at every encounter related to CKD, we could add in codes like E08.22 - E13.22, O10.2 - O10.3, and so on. There are plenty of ways to refine your queries to get exactly the information you need.
 
-This is neat, but a list of numbers isn't directly helpful. We'll need more complicated queries to get actually useful information. To start out, let's see how many diagnosis records there are with the "N18" code.
+This is neat, but a list of numbers isn't directly helpful. We'll need more complicated queries to get actually useful information. To start out, let's see how many diagnosis records there are with the "N18" code, which corresponds to chronic kidney disease.Since we want all the subcodes, we'll use the keyword "like" and the wildcard "%".
 
 ```sql
 select count(*) from diagnosis d1 where d1.icd_code LIKE 'N18%';
@@ -138,22 +138,31 @@ select d2.diagnosis_id from diagnosis d2 where exists (select 1 from encounter e
 Again, that's neat, but this still hasn't helped us gain much of an understanding about CKD. What if we combined the last two sections and queried for the 50 most common diagnoses for people with CKD?
 
 ```sql
-select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select 1 from diagnosis d2 where exists (select 1 from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
+select d2.icd_code, count(d2.icd_code) from diagnosis d2 where exists (select 1 from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%'))) group by d2.icd_code order by count(d2.icd_code) desc limit 50;
 ```
 
 We can compare this with the overall numbers for all diagnoses.
 
 ```sql
-select icd_code as 'ICD Code', count(icd_code) as 'Number of Diagnoses' from diagnosis group by icd_code order by count(icd_code) desc limit 50;
+select icd_code, count(icd_code) from diagnosis group by icd_code order by count(icd_code) desc limit 50;
 ```
 
-This isn't a perfect solution, as multiple diagnoses for a given code might have been given for a patient. A quick fix using the same query would be to insert another select statement inside the main select statement that pulls the icd code and patient id and checks for uniqueness.
+This isn't a perfect solution, as multiple diagnoses for a given code might have been given for a patient. A quick fix based on the query from before is shown below.
 
 ```sql
-select a.icd_code as 'ICD Code', count(a.icd_code) as 'Number of Diagnoses' from (select distinct b.icd_code, b.patient_id from (select 1 from diagnosis d2 where exists (select 1 from encounter e2 where e2.encounter_id = d2.encounter_id and exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%')))) b) a group by a.icd_code order by count(a.icd_code) desc limit 50;
+select a.icd_code, count(a.icd_code) from (select distinct d2.icd_code, e2.patient_id from diagnosis d2 inner join encounter e2 on d2.encounter_id = e2.encounter_id where exists (select 1 from encounter e1 where e1.patient_id = e2.patient_id and exists (select 1 from diagnosis d1 where d1.encounter_id = e1.encounter_id and d1.icd_code LIKE 'N18%'))) a group by a.icd_code order by count(a.icd_code) desc limit 50;
 ```
 
-This new select will give all the rows from the subquery that have a unique patient ID and ICD code. Now, even if a patient has multiple recorded diagnoses for any given code, they will only be counted once. As is to be expected from making a query more complicated, this will probably take a bit longer to execute - it's up to you as the person querying the data to decide if the extra time taken is worth it for what you're trying to do.
+This new select will give all the rows from the subquery that have a unique patient ID and ICD code. Now, even if a patient has multiple recorded diagnoses for any given code, they will only be counted once. Note that we need to join the diagnosis and encounter tables in the select distinct statement instead of merely checking for existence - that's because we need to check for uniqueness using the patient ID, which is only in the encounter table and won't be available from within the exists statement. A similar inner join can be used instead of where exists for all of the nested queries, but it isn't required. While exists may perform better, the SQL query optimiser will likely choose an optimal path anyways, and both inner joins and exists are likely to be among the best options anyways.
+
+As is to be expected from making a query more complicated, this will probably take a bit longer to execute - it's up to you as the person querying the data to decide if the extra time taken is worth it for what you're trying to do. Below is a set of queries equivalent to the one above that makes temporary tables for each subquery.
+
+```sql
+create temp table encounter1_ckd as (select encounter_id from diagnosis where icd_code like 'N18%');
+create temp table patient1_ckd as (select distinct patient_id from encounter where exists (select 1 from encounter1_ckd where encounter1_ckd.encounter_id = encounter.encounter_id));
+create temp table encounter2_ckd as (select encounter_id, encounter.patient_id from encounter where exists (select 1 from patient1_ckd where patient1_ckd.patient_id = encounter.patient_id));
+select a.icd_code, count(a.icd_code) from (select distinct icd_code, patient_id from diagnosis inner join encounter2_ckd on diagnosis.encounter_id = encounter2_ckd.encounter_id) as a group by icd_code order by count(a.icd_code) desc limit 50;
+```
 
 This is only a taste - there are all sorts of useful queries you can perform with an understanding of the data and a bit of thought.
 
@@ -161,7 +170,7 @@ This is only a taste - there are all sorts of useful queries you can perform wit
 
 #### Postgres won't start - psql gives a "command not found" or similar error
 
-Assuming you installed Postgres properly, this is most likely because psql is not added to your system's PATH variable. To fix this, either [add Postgres to the PATH](https://www.postgresql.org/docs/9.1/static/install-post.html) or specify the path to the MySQL executable manually. For the second option, you will need to find the location of the psql executable, which varies between installations and operating systems. Some possible locations are listed below.
+Assuming you installed Postgres properly, this is most likely because psql is not added to your system's PATH variable. To fix this, either [add Postgres to the PATH](https://www.postgresql.org/docs/9.1/static/install-post.html) or specify the path to the psql executable manually. For the second option, you will need to find the location of the psql executable, which varies between installations and operating systems. Some possible locations are listed below.
 
 Windows:
 
@@ -175,7 +184,7 @@ Mac:
 /usr/local/Cellar/postgresql/10.4/bin/psql
 ```
 
-Version numbers may be different, and the /usr folder on Mac (located in the root "/" directory, not the "~" user directory) might be hidden by default. The Mac version for this installation was installed using Homebrew. Logging into the database should now look something like this.
+Version numbers may be different, and the /usr folder on Mac (located in the root "/" directory, not the user "~" directory) might be hidden by default. The Mac version for the above installation was installed using Homebrew. Logging into the database should now look something like this.
 
 Windows:
 
@@ -360,7 +369,7 @@ Mac:
 /usr/local/mysql/bin/mysql
 ```
 
-Version numbers may be different, and the /usr folder on Mac (located in the root "/" directory, not the "~" user directory) might be hidden by default. Logging into the database should now look something like this.
+Version numbers may be different, and the /usr folder on Mac (located in the root "/" directory, not the user "~" directory) might be hidden by default. Logging into the database should now look something like this.
 
 Windows:
 
