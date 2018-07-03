@@ -1,5 +1,32 @@
 # CKD Database
 
+* PostgreSQL
+  * Preparation
+    * Instialling Postgres
+    * Launching Postgres
+    * Setting the Path
+  * Creating/Loading the Tables
+    * Running the Main Script File
+    * Progress
+  * Querying the Database
+    * Quick Examples
+    * Demographical Information
+    * CKD/More Complicated Queries
+  * Common Problems
+* MySQL
+  * Preparation
+    * Installing MySQL
+    * Launching MySQL
+    * Setting Buffer Pool Sizes
+  * Creating/Loading the Tables
+    * Running the Main Script File
+    * Progress
+  * Querying the Database
+    * Quick Examples
+    * CKD/More Complicated Queries
+  * Common Problems
+* File Descriptions
+
 ## PostgreSQL
 
 ### Preparation
@@ -41,7 +68,7 @@ If you're using the Create_LoadTables_Clientside.sql file (described in the perm
 
 ### Creating/Loading the Tables
 
-#### Running the main script file
+#### Running the Main Script File
 
 Still in SQL, run the Create_LoadTables.sql script located in the Postgres folder. This file will create all the tables according to the CKD data dictionary document (with a handful of small exceptions marked in the file) and load the information from the csv files into them.
 
@@ -235,13 +262,13 @@ create database ckd;
 use ckd;
 ```
 
-#### Setting buffer sizes
+#### Setting Buffer Sizes
 
 Before running the Create_Tables_New.sql script, it is reccomended that you change the buffer pool options for InnoDB to something appropriate for your computer. The two options are marked as `innodb_buffer_pool_size` and `innodb_log_buffer_size` located near the top of the file. The  values in the script are 2G and 256M, but these are rather conservative. Increasing these values might noticeably speed up the import process. For a computer that is not going to do other intensive work during the import, setting `innodb_buffer_pool_size` to up to 80% of your system's RAM will likely be close to optimal. Setting `innodb_log_buffer_size` at its original or lower value is fine. Setting them too high can be detrimental, as it might cause unnecessary paging. These options will have no impact if you are using another database storage engine [like MyISAM](https://dev.mysql.com/doc/refman/8.0/en/myisam-key-cache.html).
 
 ### Creating/Loading the Tables
 
-#### Running the main script file
+#### Running the Main Script File
 
 Still in SQL, run the Create_Tables_New.sql script. This file will create all the tables according to the CKD data dictionary document (with a handful of small exceptions marked in the file) and load the information from the csv files into them.
 
