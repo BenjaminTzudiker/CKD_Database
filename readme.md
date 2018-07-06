@@ -239,7 +239,7 @@ You may need to kill the query. There are a few ways to kill a query, most of wh
 
 #### Installing MySQL
 
-_Note that the table import in MySQL might take considerably longer than with PostgreSQL._
+_Note that the table import in MySQL might take considerably longer than with PostgreSQL, and as of this writing the corresponding export scripts are only available using Postgres._
 
 To begin, you will need the csv files that will be imported into the database. Next, install MySQL for your operating system, which is available [here](https://dev.mysql.com/downloads/mysql/). Creating the tables should work in Postgres or other similar database management systems with only small modifications, but importing files might be quite different.
 
