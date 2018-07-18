@@ -8,6 +8,7 @@
   * Creating/Loading the Tables
     * Running the Main Script File
     * Progress
+    * Indexing
   * Querying the Database
     * Quick Examples
     * Demographical Information
@@ -21,6 +22,9 @@
   * Creating/Loading the Tables
     * Running the Main Script File
     * Progress
+  * Normalizing/Indexing the Database
+    * Normalizing
+    * Indexing
   * Querying the Database
     * Quick Examples
     * CKD/More Complicated Queries
@@ -87,6 +91,14 @@ Unfortunately, there isn't an easy way to see how many lines have been imported 
 Some information on the current queries can be found by running `select * from pg_stat_activity;` in another postgres window. Sometimes a Postgres operation might get stuck in an idle state after completing, so it can be good to check if a query has been going on a long time - although the copy queries will almost certainly take a long time anyways. To check, look for the status column. If it's running, it will say active in the row with the copy query. If it's idle and doesn't finish the query, you may need to kill it. See the common problems section for help with this.
 
 Before running a query, you can enter `\timing` into Postgres - this won't give you mid-query progress reports, but it will make queries print out their execution time after they complete.
+
+#### Indexing
+
+Indexing some columns can noticeably speed up query performance at the cost of slower inserts/updates and more storage. You should consider indexing a column if it is likely to be used a lot (involved in where or join clauses, for example). There is an optional script that indexes a handful of columns that are likely to be important - however, if you know how you plan to use the database, it may be better to choose the columns for yourself. Run the script with the following command:
+
+```sql
+\i <path_to_script>;
+```
 
 ### Querying the Database
 
@@ -290,7 +302,7 @@ Look for "undo log entries", which should be followed by the number of rows. Som
 
 Other information - for example, the number of seconds spent executing the current query or how much of the buffer is in use - can be found elsewhere in the status.
 
-### (Optional) Normalizing/Indexing the Database
+### Normalizing/Indexing the Database
 
 #### Normalizing
 
@@ -442,6 +454,9 @@ A secondary sql script that will alter the table structure and manipulate the da
 
 ./Old SQL
 Contains the old Postgres files originally used to make the database, as well as a handful of miscellanious MySQL files not needed for normal operation.
+
+./Postgres/Create_Index.sql
+A secondary postgres sql script that creates a handful of generally useful indicies.
 
 ./Postgres/Create_LoadTables.sql
 The primary sql script, which will set up and load into the tables according to the data dictionary document. Written for PostgreSQL.
