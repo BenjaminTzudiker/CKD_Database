@@ -241,6 +241,10 @@ Mac:
 
 In some cases, the postgres system user might not have permission to read the required files. If you're unable to grant those permissions, try running the Create_LoadTables_Clientside.sql file instead of the Create_LoadTables.sql file. This uses the postgres meta-command \copy, which doesn't require the postgres server user to have permission. You'll need to set the path for each copy statement instead of simply changing the postgres variables. You might also be able to use the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for Windows to run the normal script.
 
+#### Permission denied for \i command
+
+On Windows, this may occur if the path to the script file uses backslashes instead of forward slashes.
+
 #### Postgres queries stuck in idle state
 
 You may need to kill the query. There are a few ways to kill a query, most of which require the pid number in the stat activity table. The "friendliest" ways to kill a query are to use `select pg_cancel_backend(<pid>)` which will attempt to cancel and rollback the query, or `pg_terminate_background(<pid>)` which will kill the entire connection (and may mean you'll need to reetner any queued queries). If those don't work or if you don't want Postgres to roll back the changes, you can tell your system to kill the process outside of Postgres. In Windows, this would look like `taskkill /pid <pid>` or `taskkill /f /pid <pid>`. You may need to run command line with administrative priveleges to use the latter commands, and they may require you to reconnect to/restart Postgres.
