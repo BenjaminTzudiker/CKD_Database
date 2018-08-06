@@ -1,3 +1,4 @@
+create database ckd if not exists;
 \c ckd;
 
 -- PSQL variables don't work easily with \copy
@@ -33,7 +34,7 @@ create table site_source
 truncate table site_source cascade;
 \copy site_source (site_source, name) from '/Users/benjamintzudiker/Documents/SQL/Site_Source.csv' with delimiter as ','  null as '' csv header quote as '"';
 
-
+drop table provider cascade if exists;
 create table provider      
 (site_source                numeric(2)     
 ,visit_provider_id          varchar(20)  
@@ -43,7 +44,7 @@ create table provider
 truncate table provider cascade;
 \copy provider (site_source, visit_provider_id, specialty ) from '/Users/benjamintzudiker/Documents/SQL/Provider.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
+drop table department cascade if exists;
 create table department
 (site_source              numeric(2)     
 ,department_id            numeric(18)    
@@ -59,7 +60,7 @@ create table department
 truncate table department cascade;
 \copy department (site_source, department_id, department_name, specialty, location_id   , location_name, place_of_service_id, place_of_service) from '/Users/benjamintzudiker/Documents/SQL/Department.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
+drop table epic_encounter_type cascade if exists;
 create table epic_encounter_type
 (site_source                     numeric(2)     
 ,epic_encounter_type_id          varchar(66)  
@@ -69,7 +70,7 @@ create table epic_encounter_type
 truncate table epic_encounter_type cascade;
 \copy epic_encounter_type (site_source, epic_encounter_type_id, epic_encounter_type) from '/Users/benjamintzudiker/Documents/SQL/Epic_Encounter_Type.csv' with delimiter as ',' csv header quote as '"';
 
-
+drop table diagnosis_reference cascade if exists;
 create table diagnosis_reference      
 (icd_type                 numeric(2) 
 ,icd_code                 varchar(254)
@@ -79,7 +80,7 @@ create table diagnosis_reference
 truncate table diagnosis_reference cascade;
 \copy diagnosis_reference (icd_type, icd_code, icd_description) from '/Users/benjamintzudiker/Documents/SQL/Diagnosis_Reference.csv' with delimiter as ',' csv header quote as '"';
 
-
+drop table diagnosis_criteria cascade if exists;
 create table diagnosis_criteria
 (icd_type                       numeric(2)     
 ,icd_code                       varchar(254) 
@@ -89,7 +90,7 @@ create table diagnosis_criteria
 truncate table diagnosis_criteria cascade;
 \copy diagnosis_criteria (icd_type, icd_code, condition_category_id) from '/Users/benjamintzudiker/Documents/SQL/Diagnosis_Criteria.csv' with delimiter as ',' csv header quote as '"';
 
-
+drop table condition_category cascade if exists;
 create table condition_category
 (condition_category_id             varchar(20)  
 ,condition_category_group          varchar(20)  
@@ -100,8 +101,7 @@ create table condition_category
 truncate table condition_category cascade;
 \copy condition_category (condition_category_id, condition_category_group, condition_category_title) from '/Users/benjamintzudiker/Documents/SQL/Condition_Category.csv' with delimiter as ',' csv header quote as '"';
 
-
-
+drop table lab_criteria cascade if exists;
 create table lab_criteria
 (condition_category_id          varchar(20) 
 ,component_id                   numeric(18)   
@@ -114,8 +114,7 @@ create table lab_criteria
 truncate table lab_criteria cascade;
 \copy lab_criteria (condition_category_id, component_id, site_source, component_name, threshold_low, threshold_high) from '/Users/benjamintzudiker/Documents/SQL/Lab_Criteria.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
-
+drop table medication_criteria cascade if exists;
 create table medication_criteria      
 (site_source                    numeric(2)     
 ,condition_category_id          varchar(20)  
@@ -127,9 +126,7 @@ create table medication_criteria
 truncate table medication_criteria cascade;
 \copy medication_criteria (site_source, condition_category_id, epic_medication_id, epic_medication_name, generic_name) from '/Users/benjamintzudiker/Documents/SQL/Medication_Criteria.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
-
-
+drop table drg_reference cascade if exists;
 create table drg_reference
 (site_source                numeric(2)      
 ,drg_id                     varchar(18)   
@@ -140,7 +137,7 @@ create table drg_reference
 truncate table drg_reference cascade;
 \copy drg_reference (site_source, drg_id, primary_drg_description, secondary_drg_description) from '/Users/benjamintzudiker/Documents/SQL/DRG_Reference.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
+drop table patient cascade if exists;
 create table patient      
 (patient_id             numeric(38) 
 ,site_source            numeric(2)     
@@ -162,9 +159,7 @@ create table patient
 truncate table patient cascade;
 \copy patient (patient_id, site_source, date_of_birth, gender, race1, race2, mapped_race, ethnicity, mapped_ethnicity, vital_status, vital_status_date, zip, country, state, ruca_code) from '/Users/benjamintzudiker/Documents/SQL/Patient.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
-
-
+drop table encounter cascade if exists;
 create table encounter      
 (site_source                         numeric(2)     
 ,department_id                       numeric(18)
@@ -181,11 +176,10 @@ create table encounter
 ,appointment_status                  varchar(254)
 );
 
-
 truncate table encounter cascade;
 \copy encounter (site_source, department_id, patient_id, encounter_id, epic_encounter_type_id, encounter_date, admit_date, discharge_date, hospital_discharge_disposition, ed_disposition, pcornet_visit_type, visit_provider_id, appointment_status) from '/Users/benjamintzudiker/Documents/SQL/Encounter.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
+drop table diagnosis cascade if exists;
 create table diagnosis      
 (encounter_id            numeric(38)    
 ,site_source             numeric(2)     
@@ -199,7 +193,7 @@ create table diagnosis
 truncate table diagnosis cascade;
 \copy diagnosis (encounter_id, site_source, diagnosis_source, diagnosis_timestamp, icd_type, icd_code, primary_dx_flag) from '/Users/benjamintzudiker/Documents/SQL/Diagnosis.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
+drop table vital_sign cascade if exists;
 drop table vital_sign cascade;
 create table vital_sign
 (encounter_id               numeric(38)     
@@ -212,8 +206,7 @@ create table vital_sign
 truncate table vital_sign cascade;
 \copy vital_sign (encounter_id, site_source, vital_sign_type, vital_sign_value, vital_sign_taken_date) from '/Users/benjamintzudiker/Documents/SQL/Vital_Sign.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
-
+drop table lab cascade if exists;
 create table lab      
 (encounter_id               numeric(38)    
 ,component_id               numeric(18)    
@@ -230,12 +223,10 @@ create table lab
 ,loinc_id                   varchar(254) 
 );
 
-
 truncate table lab cascade;
 \copy lab (encounter_id, component_id, site_source, component_name, procedure_id, procedure_description, time_ordered, time_taken, time_results, text_results, numeric_results, reference_units, loinc_id) from '/Users/benjamintzudiker/Documents/SQL/Lab.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
-
+drop table medication cascade if exists;
 create table medication      
 (encounter_id              numeric(38)     
 ,order_med_id              numeric(18)
@@ -262,7 +253,7 @@ create table medication
 truncate table medication cascade;
 \copy medication (encounter_id, order_med_id, site_source, order_date, start_date, end_date, epic_medication_id, epic_medication_name, generic_name, pharm_class, pharm_subclass, rxnorm_cui_scd, rxnorm_name, quantity, refills, dose, dose_unit, time_taken, frequency, ordering_mode) from '/Users/benjamintzudiker/Documents/SQL/Medication.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
+drop table patient_condition cascade if exists;
 create table patient_condition
 (site_source               numeric(38)   
 ,patient_id                numeric(38)   
@@ -273,7 +264,7 @@ create table patient_condition
 truncate table patient_condition cascade;
 \copy patient_condition (site_source, patient_id, condition_category_id, condition_date) from '/Users/benjamintzudiker/Documents/SQL/Patient_Condition.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
+drop table drg cascade if exists;
 create table drg
 (encounter_id             numeric(38)     
 ,site_source              numeric(2)      
@@ -283,8 +274,7 @@ create table drg
 truncate table drg cascade;
 \copy drg (encounter_id, site_source, drg_id) from '/Users/benjamintzudiker/Documents/SQL/DRG.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
-
+drop table procedure cascade if exists;
 create table procedure
 (encounter_id             numeric(38)     
 ,site_source              numeric(2)      
@@ -297,7 +287,7 @@ create table procedure
 truncate table procedure cascade;
 \copy procedure (encounter_id, site_source, code, code_type, description, procedure_date) from '/Users/benjamintzudiker/Documents/SQL/Procedure.csv' with delimiter as ',' null as '' csv header quote as '"';
 
-
+drop table social_history cascade if exists;
 create table social_history      
 (SITE_SOURCE            numeric(2)
 ,encounter_id           numeric(38)     
