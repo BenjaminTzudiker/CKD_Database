@@ -2,7 +2,7 @@
 
 * PostgreSQL
   * Preparation
-    * Instialling Postgres
+    * Installing Postgres
     * Launching Postgres
     * Setting the Path
   * Creating/Loading the Tables

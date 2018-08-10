@@ -10,4 +10,5 @@ create index index_lab_secondary on lab (encounter_id);
 create index index_medication_secondary on medication (encounter_id);
 create index index_patient_condition_secondary on patient_condition (patient_id);
 create index index_procedure_secondary on procedure (encounter_id);
-create index index_social_history_secondary on social_history (encounter_id);
+create index index_social_history_secondary_encounter on social_history (encounter_id);
+create index index_social_history_secondary_patient on social_history (patient_id);
