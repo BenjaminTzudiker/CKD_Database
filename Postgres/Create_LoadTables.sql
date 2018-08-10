@@ -1,3 +1,4 @@
+create database if not exists ckd;
 \c ckd;
 
 -- Edit the path variable to point inside the folder where your csv files are stored
@@ -24,7 +25,7 @@
 \set path_procedure :path 'Procedure.csv'''
 \set path_social_history :path 'Social_History.csv'''
 
-drop table site_source cascade;
+drop table if exists site_source cascade;
 create table site_source
 (site_source                numeric(2)          
 ,name                        varchar(254)
@@ -39,7 +40,7 @@ from :path_site_source
 with delimiter as ','  null as '' csv header quote as '"'
 ;
 
-
+drop table if exists provider cascade;
 create table provider      
 (site_source                numeric(2)     
 ,visit_provider_id          varchar(20)  
@@ -56,7 +57,7 @@ from :path_provider
 with delimiter as ',' null as '' csv header quote as '"'/* force null specialty*/
 ;
 
-
+drop table if exists department cascade;
 create table department
 (site_source              numeric(2)     
 ,department_id            numeric(18)    
@@ -84,7 +85,7 @@ from :path_department
 with delimiter as ',' null as '' csv header quote as '"'/* force null location_id,location_name, specialty*/
 ;
 
-
+drop table if exists epic_encounter_type cascade;
 create table epic_encounter_type
 (site_source                     numeric(2)     
 ,epic_encounter_type_id          varchar(66)  
@@ -101,7 +102,7 @@ from :path_encounter_type
 with delimiter as ',' csv header quote as '"'
 ;
 
-
+drop table if exists diagnosis_reference cascade;
 create table diagnosis_reference      
 (icd_type                 numeric(2) 
 ,icd_code                 varchar(254)
@@ -118,7 +119,7 @@ from :path_diagnosis_reference
 with delimiter as ',' csv header quote as '"'
 ;
 
-
+drop table if exists diagnosis_criteria cascade;
 create table diagnosis_criteria
 (icd_type                       numeric(2)     
 ,icd_code                       varchar(254) 
@@ -135,7 +136,7 @@ from :path_diagnosis_criteria
 with delimiter as ',' csv header quote as '"'
 ;
 
-
+drop table if exists condition_category cascade;
 create table condition_category
 (condition_category_id             varchar(20)  
 ,condition_category_group          varchar(20)  
@@ -153,8 +154,7 @@ from :path_condition_category
 with delimiter as ',' csv header quote as '"'
 ;
 
-
-
+drop table if exists lab_criteria cascade;
 create table lab_criteria
 (condition_category_id          varchar(20) 
 ,component_id                   numeric(18)   
@@ -177,8 +177,7 @@ from :path_lab_criteria
 with delimiter as ',' null as '' csv header quote as '"'/* force null threshold_low, threshold_high*/
 ;
 
-
-
+drop table if exists medication_criteria cascade;
 create table medication_criteria      
 (site_source                    numeric(2)     
 ,condition_category_id          varchar(20)  
@@ -199,9 +198,7 @@ from :path_medication_criteria
 with delimiter as ',' null as '' csv header quote as '"'/* force null generic_name*/
 ;
 
-
-
-
+drop table if exists drg_reference cascade;
 create table drg_reference
 (site_source                numeric(2)      
 ,drg_id                     varchar(18)   
@@ -221,7 +218,7 @@ with delimiter as ',' null as '' csv header quote as '"'/* force null
 secondary_drg_description*/
 ;
 
-
+drop table if exists patient cascade;
 create table patient      
 (patient_id             numeric(38) 
 ,site_source            numeric(2)     
@@ -275,9 +272,7 @@ date_of_birth
 ,ruca_code*/
 ;
 
-
-
-
+drop table if exists encounter cascade;
 create table encounter      
 (site_source                         numeric(2)     
 ,department_id                       numeric(18)
@@ -293,7 +288,6 @@ create table encounter
 ,visit_provider_id                   varchar(20)  
 ,appointment_status                  varchar(254)
 );
-
 
 truncate table encounter cascade;
 copy encounter
@@ -320,7 +314,7 @@ hospital_discharge_disposition
 ,appointment_status*/
 ;
 
-
+drop table if exists diagnosis cascade;
 create table diagnosis      
 (encounter_id            numeric(38)    
 ,site_source             numeric(2)     
@@ -345,8 +339,8 @@ from :path_diagnosis
 with delimiter as ',' null as '' csv header quote as '"'
 ;
 
-
-drop table vital_sign cascade;
+drop table if exists vital_sign cascade;
+drop table if exists vital_sign cascade;
 create table vital_sign
 (encounter_id               numeric(38)     
 ,site_source                numeric(2)      
@@ -367,8 +361,7 @@ from :path_vital_sign
 with delimiter as ',' null as '' csv header quote as '"'
 ;
 
-
-
+drop table if exists lab cascade;
 create table lab      
 (encounter_id               numeric(38)    
 ,component_id               numeric(18)    
@@ -384,7 +377,6 @@ create table lab
 ,reference_units            varchar(100) 
 ,loinc_id                   varchar(254) 
 );
-
 
 truncate table lab cascade;
 copy lab
@@ -410,8 +402,7 @@ text_results
 ,loinc_id*/
 ;
 
-
-
+drop table if exists medication cascade;
 create table medication      
 (encounter_id              numeric(38)     
 ,order_med_id              numeric(18)
@@ -463,7 +454,7 @@ with delimiter as ',' null as '' csv header quote as '"'/* force null
 refills*/
 ;
 
-
+drop table if exists patient_condition cascade;
 create table patient_condition
 (site_source               numeric(38)   
 ,patient_id                numeric(38)   
@@ -482,7 +473,7 @@ from :path_patient_condition
 with delimiter as ',' null as '' csv header quote as '"'
 ;
 
-
+drop table if exists drg cascade;
 create table drg
 (encounter_id             numeric(38)     
 ,site_source              numeric(2)      
@@ -499,8 +490,7 @@ from :path_drg
 with delimiter as ',' null as '' csv header quote as '"'
 ;
 
-
-
+drop table if exists procedure cascade;
 create table procedure
 (encounter_id             numeric(38)     
 ,site_source              numeric(2)      
@@ -523,7 +513,7 @@ from :path_procedure
 with delimiter as ',' null as '' csv header quote as '"'
 ;
 
-
+drop table if exists social_history cascade;
 create table social_history      
 (SITE_SOURCE            numeric(2)
 ,encounter_id           numeric(38)     

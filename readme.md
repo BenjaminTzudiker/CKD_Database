@@ -2,7 +2,7 @@
 
 * PostgreSQL
   * Preparation
-    * Instialling Postgres
+    * Installing Postgres
     * Launching Postgres
     * Setting the Path
   * Creating/Loading the Tables
@@ -240,6 +240,10 @@ Mac:
 #### Permission denied for csv files in the copy query
 
 In some cases, the postgres system user might not have permission to read the required files. If you're unable to grant those permissions, try running the Create_LoadTables_Clientside.sql file instead of the Create_LoadTables.sql file. This uses the postgres meta-command \copy, which doesn't require the postgres server user to have permission. You'll need to set the path for each copy statement instead of simply changing the postgres variables. You might also be able to use the [Linux subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for Windows to run the normal script.
+
+#### Permission denied for \i command
+
+On Windows, this may occur if the path to the script file uses backslashes instead of forward slashes.
 
 #### Postgres queries stuck in idle state
 
